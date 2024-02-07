@@ -25,6 +25,12 @@ def tag(artist, album, year, artwork):
         # remove common suffixes from title)
         file_title = re.sub(r'(\s*(\(|\[)(Dir|dir|official|Official|Live|Lyric|Music|Demo|Audio|feat|Closed-|((19|20)\d\d))[^\)]*(\)|\])\s*)+', "", file_title)
         
+        # replace some common unicode characters
+        file_title = file_title.replace("？", "?")
+        file_title = file_title.replace("＂", "\"")
+        file_title = file_title.replace("’", "'")
+        file_title = file_title.replace("–", "-")
+
         # remove artist from beginning of title (if present)
         file_title = re.sub(r'\s*' + artist + '\s*-\s*', '', file_title)
 
@@ -34,11 +40,6 @@ def tag(artist, album, year, artwork):
         # remove quotes surrounding title (if present)
         file_title = re.sub(r'\"\s*(.*)\s*\"', r'\1', file_title)
         file_title = re.sub(r'＂\s*(.*)\s*＂', r'\1', file_title)
-
-        # replace some common unicode characters
-        file_title = file_title.replace("？", "?")
-        file_title = file_title.replace("＂", "\"")
-        file_title = file_title.replace("’", "'")
 
         # Tag file
         f = music_tag.load_file(file)
@@ -128,7 +129,7 @@ def download(yt_playlist):
 # Identify the artist and album from a youtube playlist
 def extract_album(yt_playlist):
     # get video info from ydl
-    ydl = YoutubeDL({'playlist_items': '1'})
+    ydl = YoutubeDL({'playlist_items': '1', 'quiet': True})
     info = ydl.extract_info('https://www.youtube.com/watch?list=' + yt_playlist, download=False)
     info = ydl.sanitize_info(info)
     # extract album artist & title
