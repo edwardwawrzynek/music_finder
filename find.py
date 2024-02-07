@@ -23,10 +23,22 @@ def tag(artist, album, year, artwork):
         file_title = '-'.join(file.removesuffix('.m4a').split('-')[1:])
 
         # remove common suffixes from title)
-        file_title = re.sub(r'(\s*\((Official|Live|Lyric|Music|Demo|Audio|feat|Closed-|((19|20)\d\d))[^\)]*\)\s*)+', "", file_title)
+        file_title = re.sub(r'(\s*(\(|\[)(Dir|dir|official|Official|Live|Lyric|Music|Demo|Audio|feat|Closed-|((19|20)\d\d))[^\)]*(\)|\])\s*)+', "", file_title)
         
         # remove artist from beginning of title (if present)
         file_title = re.sub(r'\s*' + artist + '\s*-\s*', '', file_title)
+
+        # remove space surrounding title
+        file_title = re.sub(r'\s*(.*)\s*', r'\1', file_title)
+
+        # remove quotes surrounding title (if present)
+        file_title = re.sub(r'\"\s*(.*)\s*\"', r'\1', file_title)
+        file_title = re.sub(r'＂\s*(.*)\s*＂', r'\1', file_title)
+
+        # replace some common unicode characters
+        file_title = file_title.replace("？", "?")
+        file_title = file_title.replace("＂", "\"")
+        file_title = file_title.replace("’", "'")
 
         # Tag file
         f = music_tag.load_file(file)
@@ -46,7 +58,7 @@ def tag(artist, album, year, artwork):
 # Find an album by name and artist
 def find_album(yt_playlist, album, artist, music_dir, skip_dir_setup, skip_prompt):
     results = d_client.search(album, type='release', artist=artist)
-    if results.pages == 0:
+    if results.pages == 0 or len(results) == 0:
         print("ERROR: Cannot find album")
         exit(1)
     
@@ -56,6 +68,16 @@ def find_album(yt_playlist, album, artist, music_dir, skip_dir_setup, skip_promp
     album_title = res.title
     year = res.year
     img_url = res.images[0]['uri']
+
+
+    # Search for just CD releases. If we find one with the same album, artist, and year as the top result, use it's art instead.
+    # Discogg tends to have better album art for CD releases
+    results_cd = d_client.search(album, type='release', artist=artist, format='CD')
+    if len(results_cd) > 0:
+        for res_cd in results_cd:
+            if res_cd.artists[0].name.lower() == album_artist.lower() and res_cd.title.lower() == album_title.lower() and res_cd.year == year and res_cd.images and len(res_cd.images) > 0:
+                img_url = res_cd.images[0]['uri']
+                break
 
     print()
     print("Found release: " + album_title + ", " + album_artist + ", " + str(year))
